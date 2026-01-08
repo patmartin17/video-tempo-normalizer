@@ -1,0 +1,23 @@
+# Videos
+*.mp4
+*.avi
+*.mov
+*.mkv
+
+# Output folders
+v*/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Analysis outputs
+*.png
+
+# OS
+.DS_Store
+Thumbs.db
+
