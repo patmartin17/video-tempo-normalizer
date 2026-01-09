@@ -1,5 +1,11 @@
-opencv-python>=4.5.0
+# Video Tempo Normalizer
+opencv-python-headless>=4.5.0
 numpy>=1.20.0
 scipy>=1.7.0
 matplotlib>=3.4.0
 
+# SeaArt Pipeline
+playwright>=1.40.0
+requests>=2.28.0
+
+# Note: After installing, run: playwright install chromium

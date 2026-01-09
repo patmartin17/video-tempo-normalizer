@@ -6,6 +6,15 @@
 
 # Output folders
 v*/
+pipeline_output/
+
+# Session files (contain sensitive auth data)
+*_session.json
+seaart_session.json
+grok_session.json
+
+# HAR files (large network logs)
+*.har
 
 # Python
 __pycache__/
@@ -21,3 +30,5 @@ venv/
 .DS_Store
 Thumbs.db
 
+# Chrome profile cache
+chrome_*/
