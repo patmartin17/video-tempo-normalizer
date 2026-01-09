@@ -5,7 +5,7 @@ Complete pipeline to process Grok-generated videos:
 1. Upload raw video to SeaArt
 2. Run AI Frame Interpolation (60fps)
 3. Download interpolated video
-4. Run local tempo normalization (tempo_normalizer_v13.py)
+4. Run local tempo normalization (tempo_normalizer.py)
 5. Upload tempo-fixed video to SeaArt
 6. Run HD upscale
 7. Download final HD video
@@ -15,7 +15,12 @@ Usage:
     python seaart_pipeline.py <input_video.mp4>
     python seaart_pipeline.py <input_video.mp4> --skip-interpolation
     python seaart_pipeline.py <input_video.mp4> --skip-hd
+    python seaart_pipeline.py <input_video.mp4> --app-id <interpolation_app_id>
 """
+
+# App IDs from HAR file
+INTERPOLATION_APP_ID = "d3hrfgte878c73e722pg"  # AI Frame Interpolation
+VHS_SYNTHESIS_APP_ID = "d5fu2ele878c73d3jmi0"  # VHS Video Synthesis
 import asyncio
 import argparse
 import subprocess
@@ -42,7 +47,7 @@ from create_comparison import create_4way_comparison
 
 # Paths
 SCRIPT_DIR = Path(__file__).parent
-TEMPO_NORMALIZER = SCRIPT_DIR / "tempo_normalizer_v13.py"
+TEMPO_NORMALIZER = SCRIPT_DIR / "tempo_normalizer.py"
 OUTPUT_BASE_DIR = SCRIPT_DIR / "pipeline_output"
 
 
@@ -64,7 +69,7 @@ def run_tempo_normalizer(input_video, output_dir):
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     
-    # The tempo normalizer outputs to v13/ folder by default
+    # The tempo normalizer outputs to normalized_output/ folder by default
     # We need to run it and then find the output
     try:
         # Copy input to a temp location the normalizer can find
@@ -90,11 +95,11 @@ def run_tempo_normalizer(input_video, output_dir):
         
         print(result.stdout)
         
-        # Find the output file in v13/
-        v13_dir = SCRIPT_DIR / "v13"
-        if v13_dir.exists():
+        # Find the output file in normalized_output/
+        norm_dir = SCRIPT_DIR / "normalized_output"
+        if norm_dir.exists():
             # Find the most recently created normalized file
-            normalized_files = list(v13_dir.glob("*_normalized.mp4"))
+            normalized_files = list(norm_dir.glob("*_normalized.mp4"))
             if normalized_files:
                 # Get the one matching our input name
                 input_stem = input_video.stem.replace("tempo_input_", "")
@@ -203,7 +208,7 @@ async def run_pipeline(input_video, skip_interpolation=False, skip_hd=False, ski
                 return False
             
             # Run interpolation
-            task_id = await api.run_interpolation(uploaded_url, target_fps=60, multiplier=2)
+            task_id = await api.run_interpolation(uploaded_url, INTERPOLATION_APP_ID, target_fps=60, multiplier=2)
             if not task_id:
                 print("❌ Failed to start interpolation")
                 return False
@@ -362,7 +367,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python seaart_pipeline.py video.mp4
+  python seaart_pipeline.py video.mp4 --interpolation-app-id abc123
   python seaart_pipeline.py video.mp4 --skip-interpolation
   python seaart_pipeline.py video.mp4 --skip-hd
   python seaart_pipeline.py video.mp4 --skip-tempo
@@ -370,6 +375,8 @@ Examples:
     )
     
     parser.add_argument('input_video', help='Path to input video file')
+    parser.add_argument('--interpolation-app-id', '-i', 
+                       help='App ID for Frame Interpolation (from HAR file)')
     parser.add_argument('--skip-interpolation', '-si', action='store_true',
                        help='Skip frame interpolation step')
     parser.add_argument('--skip-hd', '-sh', action='store_true',
@@ -378,6 +385,11 @@ Examples:
                        help='Skip tempo normalization step')
     
     args = parser.parse_args()
+    
+    # Update global app IDs if provided
+    global INTERPOLATION_APP_ID
+    if args.interpolation_app_id:
+        INTERPOLATION_APP_ID = args.interpolation_app_id
     
     # Run the pipeline
     success = asyncio.run(run_pipeline(

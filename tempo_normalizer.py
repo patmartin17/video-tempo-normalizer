@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Video Tempo Normalizer v13.0
+Video Tempo Normalizer
 
 Uses an ABSOLUTE BASELINE TEMPO instead of comparing to the video's own beginning.
 This fixes videos that start too slow.
@@ -375,7 +375,7 @@ def create_analysis_chart(motion_before, motion_after, baseline_tempo, speed_cur
              fontsize=11, verticalalignment='center', fontfamily='monospace',
              bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
     
-    plt.suptitle(f'v13: Self-Relative Normalization (Beginning = {baseline_tempo:.2f} px/frame)', 
+    plt.suptitle(f'Self-Relative Normalization (Beginning = {baseline_tempo:.2f} px/frame)', 
                  fontsize=14, fontweight='bold')
     plt.tight_layout()
     plt.savefig(output_path, dpi=150, bbox_inches='tight')
@@ -424,7 +424,7 @@ def create_side_by_side(original_frames, normalized_frames, fps, output_path):
 
 
 def process_video(input_path, output_dir, comparison=False):
-    """Process a single video with v13 normalization."""
+    """Process a single video with hybrid tempo normalization."""
     video_name = os.path.splitext(os.path.basename(input_path))[0]
     print(f"\n{'='*60}")
     print(f"Processing: {video_name[-20:]}")
@@ -543,7 +543,7 @@ def main():
                         help='Output side-by-side comparison videos')
     args = parser.parse_args()
     
-    output_dir = "/home/pmartin/test/v13"
+    output_dir = Path(__file__).parent / "normalized_output"
     os.makedirs(output_dir, exist_ok=True)
     
     # Get video files
@@ -556,7 +556,7 @@ def main():
         video_files = sorted(list(set(video_files)))
     
     print("=" * 60)
-    print("VIDEO TEMPO NORMALIZER v13.2 - Hybrid Mode")
+    print("VIDEO TEMPO NORMALIZER - Hybrid Mode")
     print("Fast videos: stay fast | Slow videos: speed up to minimum")
     print(f"Minimum: {MIN_TEMPO_24FPS:.1f} px/frame @ 24fps (scales with FPS)")
     if args.comparison:

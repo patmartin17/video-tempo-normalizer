@@ -4,8 +4,8 @@ numpy>=1.20.0
 scipy>=1.7.0
 matplotlib>=3.4.0
 
-# SeaArt Pipeline
-playwright>=1.40.0
+# SeaArt API
 requests>=2.28.0
 
-# Note: After installing, run: playwright install chromium
+# Note: Also need Node.js with 'ws' package for session saving
+# Run: npm install ws

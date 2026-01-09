@@ -1,78 +1,174 @@
-# Video Tempo Normalizer + SeaArt Enhancement Pipeline
+# AI Video Tempo Normalizer + SeaArt Enhancement Pipeline
 
-Fixes inconsistent frame rates and speeds in AI-generated videos (Grok Imagine, etc), with optional integration with SeaArt.ai for frame interpolation and HD upscaling.
+**Turn clunky AI-generated videos into smooth, natural-looking footage.**
 
-AI video generators often produce videos with "clunky" tempo - they start fast and then slow down unnaturally. This tool analyzes motion patterns and normalizes the speed to feel more natural and consistent.
+AI video generators (Grok Imagine, Runway, etc.) often produce videos with inconsistent tempo - they start fast and slow down unnaturally, making them feel "obviously AI." This tool analyzes motion patterns using optical flow and normalizes the speed to feel natural and consistent.
 
-## Features
+Combined with SeaArt.ai's frame interpolation (60fps) and HD upscaling, you get professional-quality output from a single command.
 
-### Tempo Normalization (Local)
-- **Optical flow analysis** - Measures actual pixel motion, not just frame timing
-- **Camera motion compensation** - Separates subject motion from camera pans
-- **Noise detection** - Handles rain, grain, and other visual noise that can skew readings
-- **Hybrid tempo adjustment** - Fast videos stay fast, slow videos get sped up to a natural minimum
-- **Smooth transitions** - Gradual speed changes prevent jerkiness
-- **Side-by-side comparison** - Optional output showing before/after
+## What This Does
 
-### SeaArt Pipeline (Optional)
-- **Frame Interpolation** - Boost to 60fps using AI
-- **HD Upscaling** - Enhance resolution
-- **4-Way Comparison** - Grid video showing all processing stages
+```
+Input:  Clunky 24fps AI video with uneven tempo
+Output: Smooth 60fps HD video with natural, consistent speed
+```
+
+### The Pipeline
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  INPUT: Raw Grok/AI Video                                           │
+│  (clunky tempo, low fps, low resolution)                            │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  STAGE 1: Frame Interpolation (SeaArt.ai)                           │
+│  • Upload video to SeaArt                                           │
+│  • AI generates intermediate frames                                  │
+│  • Download smooth 60fps version                                     │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  STAGE 2: Tempo Normalization (Local)                               │
+│  • Analyze motion using optical flow                                 │
+│  • Detect camera movement vs subject movement                        │
+│  • Compute dynamic speed curve                                       │
+│  • Resample frames for consistent tempo                              │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  STAGE 3: HD Upscale (SeaArt.ai)                                    │
+│  • Upload tempo-fixed video                                          │
+│  • AI upscales to HD resolution                                      │
+│  • Download final HD version                                         │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  STAGE 4: Comparison Video                                          │
+│  • FFmpeg creates 2x2 grid showing all stages                        │
+│  ┌─────────────┬─────────────┐                                      │
+│  │  Original   │ Interpolated│                                      │
+│  ├─────────────┼─────────────┤                                      │
+│  │ Tempo Fixed │  HD Fixed   │                                      │
+│  └─────────────┴─────────────┘                                      │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  OUTPUT: Professional video with                                     │
+│  • 60fps smooth motion                                               │
+│  • Natural, consistent tempo                                         │
+│  • HD resolution                                                     │
+│  • Side-by-side comparison                                           │
+└─────────────────────────────────────────────────────────────────────┘
+```
 
 ## Installation
 
-```bash
-# Core dependencies
-pip install opencv-python-headless numpy scipy matplotlib
+### Prerequisites
 
-# SeaArt pipeline (optional)
-pip install playwright requests
-playwright install chromium
+- Python 3.8+
+- Node.js (for session saving on Windows/WSL)
+- FFmpeg (for comparison videos)
+- A SeaArt.ai account (free tier works)
+
+### Install Dependencies
+
+```bash
+# Python packages
+pip install opencv-python-headless numpy scipy matplotlib requests
+
+# Node.js package (for session saver)
+npm install ws
+
+# FFmpeg (Ubuntu/Debian)
+sudo apt install ffmpeg
+
+# FFmpeg (Windows) - download from https://ffmpeg.org/download.html
 ```
 
-## Usage
+## Quick Start
 
-### Basic Tempo Normalization
+### 1. Save Your SeaArt Session (One-Time Setup)
 
-Process all .mp4 files in current directory:
+The pipeline needs your SeaArt login cookies to make API calls. We save these using a Node.js script that connects to your browser.
+
+**Why Node.js instead of Python?**
+
+If you're on WSL (Windows Subsystem for Linux), Python cannot connect to Windows browser's localhost due to WSL2 network isolation. Node.js running on Windows CAN connect, so we use it for session capture.
+
+#### Step-by-Step:
+
+1. **Close ALL browser windows** (important - browser must start fresh with debug port)
+
+2. **Start your browser with remote debugging** (Windows CMD or PowerShell):
+
+   **For Brave:**
+   ```cmd
+   "C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe" --remote-debugging-port=9224 https://www.seaart.ai
+   ```
+
+   **For Chrome:**
+   ```cmd
+   "C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9224 https://www.seaart.ai
+   ```
+
+   **For Edge:**
+   ```cmd
+   "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --remote-debugging-port=9224 https://www.seaart.ai
+   ```
+
+3. **Login to SeaArt.ai** in the browser window that opens (if not already logged in)
+
+4. **Run the session saver** (from Windows CMD in the project folder):
+   ```cmd
+   node save_session.js
+   ```
+
+   Or from WSL:
+   ```bash
+   /mnt/c/Windows/System32/cmd.exe /c "cd /d C:\path\to\project && node save_session.js"
+   ```
+
+5. **Verify**: You should see "SUCCESS! Session saved." and a `seaart_session.json` file
+
+### 2. Run the Full Pipeline
+
 ```bash
-python tempo_normalizer_v13.py
+python seaart_pipeline.py your_grok_video.mp4
 ```
 
-Process specific video(s):
-```bash
-python tempo_normalizer_v13.py video1.mp4 video2.mp4
-```
-
-Generate side-by-side comparison videos:
-```bash
-python tempo_normalizer_v13.py --comparison
-# or
-python tempo_normalizer_v13.py -c video.mp4
-```
-
-### SeaArt Enhancement Pipeline
-
-#### 1. First-time setup - Login to SeaArt
-```bash
-python seaart_login.py
-# Chrome opens → Login to SeaArt.ai → Session saved automatically
-```
-
-#### 2. Run the full pipeline
-```bash
-python seaart_pipeline.py video.mp4
-```
-
-This will:
-1. Upload to SeaArt for 60fps frame interpolation
+That's it! The pipeline will:
+1. Upload to SeaArt for 60fps interpolation
 2. Download and run local tempo normalization
 3. Upload for HD upscaling
 4. Create 4-way comparison video
 
-#### Pipeline options:
+### Output
+
+```
+pipeline_output/{timestamp}_{uuid}/
+├── 00_original.mp4      # Your input video
+├── 01_interpolated.mp4  # 60fps smooth version
+├── 02_tempo_fixed.mp4   # Tempo normalized
+├── 03_hd_fixed.mp4      # HD upscaled final
+└── 04_comparison.mp4    # 2x2 grid comparison
+```
+
+## Usage Options
+
+### Full Pipeline
 ```bash
-# Skip frame interpolation
+python seaart_pipeline.py video.mp4
+```
+
+### Skip Steps
+```bash
+# Skip frame interpolation (use if already 60fps)
 python seaart_pipeline.py video.mp4 --skip-interpolation
 
 # Skip HD upscaling
@@ -82,64 +178,181 @@ python seaart_pipeline.py video.mp4 --skip-hd
 python seaart_pipeline.py video.mp4 --skip-tempo
 ```
 
-### Create Comparison Videos
-
-4-way grid:
+### Tempo Normalizer Only (No SeaArt)
 ```bash
-python create_comparison.py original.mp4 interpolated.mp4 tempo_fixed.mp4 hd_fixed.mp4 -o comparison.mp4
+# Process all .mp4 files in current directory
+python tempo_normalizer.py
+
+# Process specific videos
+python tempo_normalizer.py video1.mp4 video2.mp4
+
+# Generate side-by-side comparison
+python tempo_normalizer.py --comparison video.mp4
 ```
 
-Side-by-side:
+### Create Comparison Videos
 ```bash
+# 4-way grid
+python create_comparison.py v1.mp4 v2.mp4 v3.mp4 v4.mp4 -o comparison.mp4
+
+# Side-by-side (2 videos)
 python create_comparison.py before.mp4 after.mp4 -s -o comparison.mp4
 ```
 
-## Output
+## How Tempo Normalization Works
 
-- **Tempo normalizer**: Outputs to `v13/` folder
-- **SeaArt pipeline**: Outputs to `pipeline_output/{timestamp}_{uuid}/`
-  - `00_original.mp4` - Input video
-  - `01_interpolated.mp4` - 60fps version
-  - `02_tempo_fixed.mp4` - Normalized tempo
-  - `03_hd_fixed.mp4` - HD upscaled
-  - `04_comparison.mp4` - 4-way grid
+### The Problem
 
-## How It Works
+AI video generators produce inconsistent motion:
+- Videos often start fast and slow down
+- Frame-to-frame motion varies wildly
+- Camera movements can mask subject motion
+- Environmental effects (rain, grain) add noise
 
-### Tempo Normalization
-1. **Analyze** - Computes optical flow between frames to measure motion magnitude
-2. **Classify** - Determines if video is fast, borderline, or slow based on beginning tempo
-3. **Compute speed curve** - Calculates dynamic speed adjustments to normalize tempo
-4. **Apply** - Resamples frames according to speed curve (no interpolation = sharp output)
+### The Solution
 
-### SeaArt Pipeline
-1. **Upload** - Get presigned URL → Upload to GCS → Confirm
-2. **Process** - Submit to AI app → Poll for completion
-3. **Download** - Fetch result from CDN
+1. **Optical Flow Analysis**
+   - Compute dense optical flow between every frame pair (Farneback method)
+   - Measure pixel displacement magnitude as motion proxy
+
+2. **Camera Motion Compensation**
+   - Calculate median flow (represents camera movement)
+   - Subtract from total flow to isolate subject motion
+   - Blend both signals (50/50) for final motion estimate
+
+3. **Noise Detection**
+   - Compare mean vs median flow magnitudes
+   - High mean/median ratio = noisy video (rain, grain)
+   - Apply discount factor to prevent over-speeding noisy videos
+
+4. **Hybrid Speed Calculation**
+   - Use video's own beginning tempo as baseline
+   - Apply minimum acceptable tempo floor (1.5 px/frame @ 24fps)
+   - Fast videos stay fast, slow videos get sped up
+   - Smooth speed curve with Gaussian filter (no jerky transitions)
+
+5. **Frame Resampling**
+   - Map new timeline to original frames
+   - No interpolation/blending = sharp output
+   - Skip frames to speed up, repeat to slow down
 
 ## Configuration
 
 ### Tempo Normalizer Parameters
-In `tempo_normalizer_v13.py`:
-- `MIN_TEMPO_24FPS = 1.5` - Minimum acceptable motion (px/frame at 24fps)
-- `max_speedup = 2.0` - Maximum speedup factor
-- `max_slowdown = 0.6` - Maximum slowdown factor  
-- `smoothing = 10` - Gaussian smoothing for speed curve
+
+In `tempo_normalizer.py`:
+
+```python
+MIN_TEMPO_24FPS = 1.5  # Minimum acceptable motion (px/frame at 24fps)
+max_speedup = 2.0      # Maximum speedup factor
+max_slowdown = 0.6     # Maximum slowdown factor
+smoothing = 10         # Gaussian smoothing sigma for speed curve
+```
 
 ### SeaArt App IDs
-In `seaart_api.py`:
-- `INTERPOLATION_APP_ID` - AI Frame Interpolation app
-- `VHS_SYNTHESIS_APP_ID` - VHS Video Synthesis app (for uploads)
 
-## Files
+In `seaart_pipeline.py`:
 
-| File | Description |
-|------|-------------|
-| `tempo_normalizer_v13.py` | Core tempo normalization script |
-| `seaart_login.py` | SeaArt session saver |
-| `seaart_api.py` | SeaArt API wrapper |
-| `seaart_pipeline.py` | Full enhancement pipeline |
-| `create_comparison.py` | Comparison video creator |
+```python
+INTERPOLATION_APP_ID = "d3hrfgte878c73e722pg"  # AI Frame Interpolation
+VHS_SYNTHESIS_APP_ID = "d5fu2ele878c73d3jmi0"  # VHS Video Synthesis (for uploads)
+```
+
+These are discovered from network traffic. If SeaArt changes their app IDs, you'll need to:
+1. Open browser DevTools (F12) → Network tab
+2. Use the apps on SeaArt.ai
+3. Look for requests to `/api/v1/creativity/generate/apply`
+4. Find the `apply_id` in the request body
+
+## File Structure
+
+```
+├── seaart_pipeline.py      # Main orchestrator - runs the full pipeline
+├── seaart_api.py           # SeaArt API wrapper (upload, poll, download)
+├── tempo_normalizer.py     # Core tempo normalization algorithm
+├── create_comparison.py    # FFmpeg-based comparison video creator
+├── save_session.js         # Node.js session saver (browser → cookies)
+├── seaart_session.json     # Saved session (gitignored)
+├── requirements.txt        # Python dependencies
+└── pipeline_output/        # Generated videos (gitignored)
+```
+
+## API Details
+
+### SeaArt API Flow
+
+1. **Upload Video**
+   - `POST /api/v1/resource/pre-sign/get` → Get presigned URL
+   - `PUT {presigned_url}` → Upload to Google Cloud Storage
+   - `POST /api/v1/resource/pre-sign/confirmPart` → Confirm part
+   - `POST /api/v1/resource/pre-sign/confirm` → Finalize
+
+2. **Run AI App**
+   - `POST /api/v1/creativity/generate/apply` → Start task
+   - Returns `task_id`
+
+3. **Poll Progress**
+   - `POST /api/v1/task/batch-progress` → Check status
+   - Status: 1=waiting, 2=processing, 3=finished, 4=failed
+
+4. **Download Result**
+   - Direct GET to CDN URL from task result
+
+### Session Format
+
+`seaart_session.json` uses Playwright's storage_state format:
+
+```json
+{
+  "cookies": [
+    {
+      "name": "cookie_name",
+      "value": "cookie_value",
+      "domain": ".seaart.ai",
+      "path": "/",
+      "expires": 1234567890,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}
+```
+
+## Troubleshooting
+
+### "Cannot connect to browser on port 9224"
+- Close ALL browser windows completely
+- Start browser with `--remote-debugging-port=9224`
+- Make sure no other process is using port 9224
+
+### "HTTP 404" on SeaArt connection
+- This is normal for the user info endpoint
+- The actual API calls will still work if you're logged in
+
+### "Session may still work" warning
+- The user endpoint returned 404 but cookies are valid
+- Pipeline should work - try running it
+
+### Videos not speeding up enough
+- Increase `MIN_TEMPO_24FPS` in tempo_normalizer.py
+- Current default: 1.5 px/frame
+
+### WSL can't connect to Windows browser
+- Use the Node.js save_session.js script
+- Run Node from Windows CMD, not WSL
+
+## Contributing
+
+This project was built iteratively through conversation, solving real problems:
+- Started with basic optical flow → too blurry
+- Added camera motion compensation → better accuracy  
+- Implemented noise detection → handles rain/grain
+- Created hybrid approach → fast stays fast, slow speeds up
+- Integrated SeaArt API → full automation
+
+Feel free to open issues or PRs!
 
 ## License
 

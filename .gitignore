@@ -1,20 +1,24 @@
-# Videos
+# Videos (too large for git)
 *.mp4
 *.avi
 *.mov
 *.mkv
+*.webm
 
 # Output folders
-v*/
 pipeline_output/
+normalized_output/
 
 # Session files (contain sensitive auth data)
 *_session.json
 seaart_session.json
-grok_session.json
 
-# HAR files (large network logs)
+# HAR files (large network logs with sensitive data)
 *.har
+
+# Node.js
+node_modules/
+package-lock.json
 
 # Python
 __pycache__/
@@ -22,13 +26,18 @@ __pycache__/
 *.pyo
 .venv/
 venv/
+*.egg-info/
 
 # Analysis outputs
 *.png
 
-# OS
+# OS files
 .DS_Store
 Thumbs.db
+*:Zone.Identifier
 
-# Chrome profile cache
-chrome_*/
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
